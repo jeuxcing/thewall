@@ -15,6 +15,24 @@ Adafruit_NeoPixel lines[NB_LINES];
 PJONSoftwareBitBang bus;
 
 
+void error_handler(uint8_t code, uint16_t data, void *custom_pointer) {
+  if(code == PJON_CONNECTION_LOST) {
+    Serial.print("Connection with device ID ");
+    Serial.print(bus.packets[data].content[0], DEC);
+    Serial.println(" is lost.");
+  }
+  if(code == PJON_PACKETS_BUFFER_FULL) {
+    Serial.print("Packet buffer is full, has now a length of ");
+    Serial.println(data, DEC);
+    Serial.println("Possible wrong bus configuration!");
+    Serial.println("higher PJON_MAX_PACKETS if necessary.");
+  }
+  if(code == PJON_CONTENT_TOO_LONG) {
+    Serial.print("Content is too long, length: ");
+    Serial.println(data);
+  }
+};
+
 void receiver_function(uint8_t *payload, uint16_t length, const PJON_Packet_Info &info) {
   uint8_t line_idx = payload[0];
   uint8_t led_idx = payload[1];
@@ -27,6 +45,8 @@ void receiver_function(uint8_t *payload, uint16_t length, const PJON_Packet_Info
 
 
 void setup() {
+  Serial.begin(115200);
+  
   // Init led strips
   for (int lines_idx=0 ; lines_idx<NB_LINES ; lines_idx++) {
     //lines[lines_idx] = Adafruit_NeoPixel(NB_LEDS_LINE, pins[lines_idx]);
@@ -41,23 +61,17 @@ void setup() {
   // Set the pin 12 as the communication pin
   bus.strategy.set_pin(D1);
   bus.set_id(12);
-  
-  // Only one bus
-  bus.set_shared_network(false);
-  // One way only
-  bus.set_communication_mode(PJON_SIMPLEX);
-  // No need for provenance
-  bus.include_sender_info(false);
-  // High fiability
-  bus.set_crc_32(true);
-  // Define network callback
+  bus.begin();
+
+  bus.set_error(error_handler);
   bus.set_receiver(receiver_function);
 }
 
 unsigned long previous_show = 0;
 
 void loop() {
-  bus.receive();
+  bus.receive(REFRESH_DELAY);
+  bus.update();
 
   unsigned long current_time = millis();
   if (current_time - previous_show > REFRESH_DELAY) {
