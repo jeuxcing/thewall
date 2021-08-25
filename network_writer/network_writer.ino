@@ -45,11 +45,9 @@ bool mysend(uint16_t destination, uint8_t * payload, uint16_t length) {
   acknowledge = false;
   payload[length++] = MY_ID;
 
-  for (int i=0 ; i<10 and !acknowledge ; i++) {
-    unsigned long prev_time = millis();
+  for (int i=0 ; i<100 and !acknowledge ; i++) {
     bus.send_packet(destination, payload, length);
-    bus.receive();
-    while (!acknowledge or (millis() - prev_time < 10)) {
+    for (int j=0 ; j<1000 and !acknowledge ; j++) {
       bus.receive();
     }
   }
