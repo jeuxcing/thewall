@@ -1,10 +1,11 @@
 #include <PJONSoftwareBitBang.h>
 #include <Adafruit_NeoPixel.h>
+#include <ESP8266WiFi.h>
 
 #define REFRESH_DELAY 50
-#define NB_LINES 2
+#define NB_LINES 3
 #define NB_SEGMENTS (NB_LINES - 1)
-#define NB_LED_SEGMENT (8 /* To be changed for real usage */)
+#define NB_LED_SEGMENT (24 /* To be changed for real usage */)
 #define NB_LEDS_LINE (NB_SEGMENTS * NB_LED_SEGMENT)
 
 //             D2 D3 D4 D5  D6
@@ -46,6 +47,8 @@ void receiver_function(uint8_t *payload, uint16_t length, const PJON_Packet_Info
 
 void setup() {
   Serial.begin(115200);
+//  ESP.wdtDisable();
+  WiFi.mode(WIFI_OFF);
   
   // Init led strips
   for (int lines_idx=0 ; lines_idx<NB_LINES ; lines_idx++) {
@@ -71,13 +74,17 @@ unsigned long previous_show = 0;
 
 void loop() {
   bus.receive(REFRESH_DELAY);
+  yield();
   bus.update();
-
+  yield();
   unsigned long current_time = millis();
   if (current_time - previous_show > REFRESH_DELAY) {
+    ESP.wdtFeed();
     for (int line_idx=0 ; line_idx<NB_LINES ; line_idx++) {
-      lines[line_idx].show();
-    }
-    previous_show = millis();
+        lines[line_idx].show();
+        yield();
+      }
+      previous_show = millis();
   }
+
 }
