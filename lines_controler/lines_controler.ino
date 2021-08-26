@@ -2,16 +2,15 @@
 #include <Adafruit_NeoPixel.h>
 
 #define REFRESH_DELAY 50
-#define NB_LINES 2
+#define NB_LINES 3
 #define NB_SEGMENTS (NB_LINES - 1)
-#define NB_LED_SEGMENT (8 /* To be changed for real usage */)
+#define NB_LED_SEGMENT (24 /* To be changed for real usage */)
 #define NB_LEDS_LINE (NB_SEGMENTS * NB_LED_SEGMENT)
 
-//             D2 D3 D4 D5  D6
-int pins[5] = {4, 0, 2, 14, 12};
+int pins[5] = {2, 3, 5, 6, 7};
 Adafruit_NeoPixel lines[NB_LINES];
 
-#define D1 5
+#define NET 13
 PJONSoftwareBitBang bus;
 
 
@@ -39,17 +38,9 @@ void setup() {
 
   // Init network
   // Set the pin 12 as the communication pin
-  bus.strategy.set_pin(D1);
+  bus.strategy.set_pin(NET);
   bus.set_id(12);
   
-  // Only one bus
-  bus.set_shared_network(false);
-  // One way only
-  bus.set_communication_mode(PJON_SIMPLEX);
-  // No need for provenance
-  bus.include_sender_info(false);
-  // High fiability
-  bus.set_crc_32(true);
   // Define network callback
   bus.set_receiver(receiver_function);
 }
@@ -57,7 +48,8 @@ void setup() {
 unsigned long previous_show = 0;
 
 void loop() {
-  bus.receive();
+  bus.receive(REFRESH_DELAY);
+  //bus.update();
 
   unsigned long current_time = millis();
   if (current_time - previous_show > REFRESH_DELAY) {
