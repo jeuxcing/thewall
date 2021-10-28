@@ -1,7 +1,7 @@
 #include <PJONSoftwareBitBang.h>
 #include <Adafruit_NeoPixel.h>
 
-#define REFRESH_DELAY 30
+#define REFRESH_DELAY 100
 #define NB_LINES 5
 #define NB_SEGMENTS 5
 #define NB_LED_SEGMENT (12)
@@ -16,6 +16,9 @@ Adafruit_NeoPixel lines[NB_LINES];
 PJONSoftwareBitBang bus;
 
 
+bool modified[NB_LINES];
+
+
 void modify_led(uint8_t * payload, uint8_t length) {
   uint8_t line_idx = payload[1];
   uint8_t led_idx = payload[2];
@@ -24,6 +27,8 @@ void modify_led(uint8_t * payload, uint8_t length) {
   uint8_t blue = payload[5];
 
   lines[line_idx].setPixelColor(led_idx, red, green, blue);
+
+  modified[line_idx] = true;
 }
 
 
@@ -41,7 +46,7 @@ void modify_segment(uint8_t * payload, uint8_t length) {
 
 
 void receiver_function(uint8_t * payload, uint16_t length, const PJON_Packet_Info &info) {
-  //Serial.println("Packet received");
+  Serial.println("Packet received");
   
   
   uint8_t command = payload[0];
@@ -81,13 +86,16 @@ void setup() {
 unsigned long previous_show = 0;
 
 void loop() {
-  bus.receive(REFRESH_DELAY);
-  //bus.update();
+  for (int i=0 ; i<10 ; i++)
+    bus.receive();
 
   unsigned long current_time = millis();
   if (current_time - previous_show > REFRESH_DELAY) {
     for (int line_idx=0 ; line_idx<NB_LINES ; line_idx++) {
-      lines[line_idx].show();
+      if (modified[line_idx]) {
+        lines[line_idx].show();
+        modified[line_idx] = false;
+      }
     }
     previous_show = millis();
   }
