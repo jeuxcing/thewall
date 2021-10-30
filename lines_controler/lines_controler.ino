@@ -1,13 +1,23 @@
 #include <PJONSoftwareBitBang.h>
 #include <Adafruit_NeoPixel.h>
 
-#define REFRESH_DELAY 100
+// #define NET_ID 'R'
+// #define NET_ID 'V'
+#define NET_ID 'H'
+
+#define REFRESH_DELAY 5
 #define NB_LINES 5
-#define NB_SEGMENTS 5
-#define NB_LED_SEGMENT (12)
+
+#if NET_ID == 'R'
+  #define NB_SEGMENTS 5
+  #define NB_LED_SEGMENT (12)
+#else
+  #define NB_SEGMENTS 4
+  #define NB_LED_SEGMENT (24)
+#endif
+
 #define NB_LEDS_LINE (NB_SEGMENTS * NB_LED_SEGMENT)
 
-#define NET_ID 'R'
 
 int pins[5] = {2, 3, 5, 6, 7};
 Adafruit_NeoPixel lines[NB_LINES];
@@ -27,7 +37,6 @@ void modify_led(uint8_t * payload, uint8_t length) {
   uint8_t blue = payload[5];
 
   lines[line_idx].setPixelColor(led_idx, red, green, blue);
-
   modified[line_idx] = true;
 }
 
@@ -40,14 +49,21 @@ void modify_segment(uint8_t * payload, uint8_t length) {
   uint8_t green = payload[5];
   uint8_t blue = payload[6];
 
-  for (uint8_t i=start_led_idx ; i<= stop_led_idx ; i++)
+  for (uint8_t i=start_led_idx ; i<= stop_led_idx ; i++) {
     lines[line_idx].setPixelColor(i, red, green, blue);
+  }
+  modified[line_idx] = true;
 }
 
 
 void receiver_function(uint8_t * payload, uint16_t length, const PJON_Packet_Info &info) {
-  Serial.println("Packet received");
-  
+  //Serial.println("Packet received");
+  for (int i=0 ; i<length ; i++) {
+    Serial.print('[');
+    Serial.print(payload[i]);
+    Serial.print(']');
+  }
+  Serial.println();
   
   uint8_t command = payload[0];
   switch(command) {
